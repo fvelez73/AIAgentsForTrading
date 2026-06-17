@@ -47,8 +47,8 @@ CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6")
 # Telegram delivery.
 # Create a bot via @BotFather to get the token, then get your chat/channel id.
 # ---------------------------------------------------------------------------
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+TELEGRAM_BOT_TOKEN = os.environ.get("8996577695:AAFgrDTiyMTjeLpHvQP00g3Ts6-_eH7sPlE", "")
+TELEGRAM_CHAT_ID = os.environ.get("8615962435", "")
 
 # Max characters Telegram allows per message.
 TELEGRAM_MAX_CHARS = 4096
