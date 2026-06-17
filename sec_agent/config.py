@@ -34,7 +34,7 @@ SEC_LOOKBACK_DAYS = 2
 # ---------------------------------------------------------------------------
 SEC_USER_AGENT = os.environ.get(
     "SEC_USER_AGENT",
-    "DailyIntelBot/1.0 (contact@example.com)",  # <-- change to a real contact
+    "DailyIntelBot/1.0 (fvelez@exlcap.com)",  # <-- change to a real contact
 )
 
 # ---------------------------------------------------------------------------
