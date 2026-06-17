@@ -27,17 +27,47 @@ _FILING_INDEX_URL = (
     "https://www.sec.gov/cgi-bin/browse-edgar"  # not used directly; kept for ref
 )
 
-_HEADERS = {"User-Agent": SEC_USER_AGENT, "Accept-Encoding": "gzip, deflate"}
+# SEC is strict about headers. Send a full, browser-like header set with a
+# descriptive User-Agent containing real contact info (set via SEC_USER_AGENT).
+_HEADERS = {
+    "User-Agent": SEC_USER_AGENT,
+    "Accept-Encoding": "gzip, deflate",
+    "Accept": "application/json, text/html",
+    "Host": "www.sec.gov",
+}
 
 # Simple in-process cache for the ticker->CIK map (refreshed per run).
 _ticker_map_cache: dict[str, int] | None = None
 
 
-def _get(url: str) -> requests.Response:
-    resp = requests.get(url, headers=_HEADERS, timeout=30)
-    resp.raise_for_status()
-    time.sleep(0.15)  # stay polite, ~6-7 req/sec max
-    return resp
+def _get(url: str, max_retries: int = 4) -> requests.Response:
+    """GET with exponential backoff on 429/403/5xx (SEC rate limiting)."""
+    # Host header must match the URL's host (www.sec.gov vs data.sec.gov).
+    headers = dict(_HEADERS)
+    if "data.sec.gov" in url:
+        headers["Host"] = "data.sec.gov"
+
+    last_exc: Exception | None = None
+    for attempt in range(max_retries):
+        try:
+            resp = requests.get(url, headers=headers, timeout=30)
+            if resp.status_code == 200:
+                time.sleep(0.2)  # stay well under 10 req/sec
+                return resp
+            if resp.status_code in (429, 403) or resp.status_code >= 500:
+                # Back off: 2s, 4s, 8s, 16s
+                wait = 2 ** (attempt + 1)
+                time.sleep(wait)
+                last_exc = requests.HTTPError(
+                    f"{resp.status_code} from SEC (attempt {attempt + 1})"
+                )
+                continue
+            resp.raise_for_status()  # other 4xx: don't retry
+        except requests.RequestException as e:
+            last_exc = e
+            time.sleep(2 ** (attempt + 1))
+    # Exhausted retries
+    raise last_exc or requests.HTTPError("SEC request failed")
 
 
 def _load_ticker_map() -> dict[str, int]:
